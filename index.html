@@ -2,19 +2,397 @@
 <html>
   <head>
     <title>Flower Power</title>
+    
+    <style>
+    
+      *, *::after, *::before {
+        box-sizing: border-box;
+      }
+      
+      html {
+        font-family: Helvetica, sans-serif;
+        font-size: 20px;
+        color: rgba(44, 62, 80,1.0);
+      }
+      
+      body {
+        background-color: rgb(236, 240, 241);
+      }
+      
+      ul, li, div, body, html {
+        margin: 0;
+        padding: 0;
+      }
+      
+      ul, li {
+        list-style-type: none;
+      }
+      
+      html, body {
+        height: 100%;
+      }
+      
+      #details, #chart {
+        padding: 10px;
+      }
+      .detail {
+        padding: 15px;
+        margin-bottom: 10px;
+        position: relative;
+      }
+      
+      .detail::before {
+        content: attr(monogram);
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        color: rgb(236, 240, 241);
+        font-size: 2em;
+        text-align:center;
+        line-height: 70px;
+        background-color: inherit;
+        border-radius: 35px;
+        height: 70px;
+        width: 70px;
+        display: block;
+        font-weight: 100;
+      }
+      
+      .detail h1::after {
+        display: block;
+        font-size: .5em;
+        font-weight: 100;
+        color: rgba(44, 62, 80,1.0);
+        content: 'as real units';
+      }
+      .detail.percent h1::after {
+        content: 'as percent of start-of-day ' attr(unit) ' inventory';
+      }
+      
+      .detail .periods .description {
+        display: inline-block;
+        width: 35%;
+        text-align: right;
+      }
+      .detail .period {
+        font-size: 2em;
+      }
+      
+      .detail.percent .focus-num::after {
+        content: '%';
+        font-size: .5em;
+        font-weight: 100;
+        color: rgba(44, 62, 80,1.0);;
+      }
+      
+      .detail.percent .focus-num.total {
+        display: none;
+      }
+      
+      .detail-list::after {
+        clear:both;
+        content: '';
+        display: block;
+      }
+      
+      .detail-list li {
+        float: left;
+        width: 25%;
+        text-align: center;
+        color: rgb(236, 240, 241);
+      }
+      
+      .detail-list .focus {
+        display: block;
+/*        font-size: 3.5em;*/
+        font-weight: 700;
+        margin: 0;
+        padding: 0;
+      }
+      
+      .detail-list .focus.focus-num {
+        font-size: 3.5em;
+      }
+      
+      .detail-list .focus.focus-date {
+        font-size: 1.4em;
+      }
+      
+      .detail:last-child {
+        margin-bottom: 0;
+      }
+      
+      .detail h1 {
+        color: rgb(236, 240, 241);
+      }
+      
+      #chart {
+        width: 50%;
+        position: fixed;
+        top: 0;
+        bottom: 0;
+      }
+      
+      #details {
+        width: 50%;
+        margin-left: 50%;
+      }
+      
+      #chart {
+        left: 0;
+      }
+      
+      #chart main {
+        height: 50%;
+      }
+      
+      .button-set {
+        text-align: center;
+        height: 50%;
+      }
+      
+
+      .button-set > * {
+        height: 100%;
+        vertical-align: middle;
+        display: inline-block;
+      }
+      
+      .button-set::after {
+        height: 50%;
+        display: inline-block;
+        content: '';
+      }
+      
+      .button-set span {
+        font-weight: 100;
+      }
+      
+      .button-set > .select-data {
+        width: 33%;
+        float: left;
+      }
+      
+      .button-set > .select-data span {
+        display: block;
+      }
+      
+      .button-set button {
+        height: 7em;
+        width: 7em;
+        text-align: center;
+        border-radius: 3.5em;
+        cursor: pointer;
+        vertical-align: middle;
+        outline: none;
+        background-color: rgba(0,0,0,.1);
+      }
+      
+      .button-set button.selected {
+        background-color: coral;
+      }
+      
+      .button-set button.percent {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+      }
+      
+      .button-set button.percent::after,
+      .button-set button.count::after {
+        color: rgb(236, 240, 241);
+      }
+      
+      .button-set button.percent::after {
+        content: '%';
+        color: rgb(236, 240, 241);
+        font-size: 3em;
+      }
+      
+      .button-set button.count {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+      }
+      
+      .button-set button.count::after {
+        content: 'count';
+        color: rgb(236, 240, 241);
+        font-size: 2em;
+      }
+      
+      .circles {
+        text-align: center;
+      }
+      
+      .circles > * {
+        display: inline-block;
+        background-color: rgb(236, 240, 241);
+        border: 2px solid black;
+      }
+      
+      .circle-big {
+        height: 3em;
+        width: 3em;
+        border-radius: 1.5em;
+      }
+      
+      .circle-small {
+        height: 1em;
+        width: 1em;
+        border-radius: .5em;
+        margin: .25em;
+      }
+      
+      .chart-buttons {
+        position:fixed;
+        bottom: 0;
+        left: 0;
+        right: 50%;
+        top: 50%;
+      }
+    </style>
   </head>
   <body>
-    <main id='inventory'></main>
-    <button id='showByFlower'>view info by flower</button>
-    <button id='showCombined'>all inventory</button>
-    <button id='showDelivered'>starting inventory</button>
-    <button id='showSoldCount'>flowers sold (actual)</button>
-    <button id='showSoldPercent'>flowers sold (%)</button>
-    <!-- <button id='showUnsold'>flowers remaining</button> -->
+    <!-- <div class='container'> -->
+    <div id='chart'>
+      <main id='inventory'></main>
+      <div class='chart-buttons'>
+        <div class='button-set'>
+          show data for:
+          <button 
+            class='select-demographic' 
+            id='showCombined'>
+            <div class='circles'>
+              <div class='circle-big'></div>
+            </div>
+            combined units
+          </button>
+          <button 
+            class='select-demographic' 
+            id='showFlowers'>
+            <div class='circles'>
+              <div class='circle-small'></div>
+              <div class='circle-small'></div>
+              <div class='circle-small'></div>
+            </div>
+            breakdown by unit
+          </button>
+        </div>
+      
+        <div class='button-set'>
+          <!-- <button id='showStartingInventory'>sold + unsold</button> -->
+          <div class='select-data'>
+            <span>unit sales</span>
+            <span class='flavor'></span>
+            <button 
+              class='select-data count' 
+              id='showSoldCount'>
+            </button>
+            <button 
+              class='select-data percent' 
+              id='showSoldPercent'>
+            </button>
+          </div>
+        
+          <div class='select-data'>
+            <span>end-of-day inventory</span>
+            <span class='flavor'>
+            
+            </span>
+            <button 
+              class='select-data count' 
+              id='showRemainingCount'>
+            </button>
+            <button 
+              class='select-data percent' 
+              id='showRemainingPercent'>
+            </button>
+          </div>
+        
+          <div class='select-data'>
+            <span>start-of-day inventory</span>
+            <span class='flavor'>
+            
+            </span>
+            <button 
+              class='select-data count' 
+              id='showReceivedCount'>
+            </button>
+            <button 
+              class='select-data percent' 
+              style='pointer-events: none; opacity: .5'
+              id='showReceivedPercent'>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <ul id='details'></ul>
     
     <script src="js/vendor/Chart.min.js"></script>
     <script src="js/vendor/KolorWheel.min.js"></script>
     <script src="js/vendor/lodash.min.js"></script>
+    <script src="js/vendor/jquery-2.1.1.min.js"></script>
+    
+    <script type='text/html' id='template-detail'>
+      <h1 unit='<%= column %>'><%= column %>s <%= property %></h1>
+      <div class='periods'>
+        <div>    
+          <span class='description'>
+            For the period starting 
+          </span>
+          <span class='period'><%= details.startOfPeriod %></span>
+        </div>
+        
+        <div>
+          <span class='description'>and ending</span>
+          <span class='period'><%= details.endOfPeriod %></span>
+        </div>
+      </div>
+      
+      <br>
+      <ul class='detail-list'>
+        <li>
+          <span>Total:</span>
+          <span class='focus focus-num total'><%= details.total %></span>
+        </li>
+        <li>
+          <span>Average:</span>
+          <span class='focus focus-num avg'><%= details.avg.toFixed() %></span>
+        </li>
+        <li>
+          <span>Maximum:</span>
+          <span class='focus focus-num max'><%= details.max.toFixed() %></span>
+        </li>
+        <li>
+          <span>Best Day:</span>
+          <span class='focus focus-date'><%= details.bestDay %></span>
+        </li>
+      </ul>
+    </script>
+    
+    <!-- <script type='text/html' id='template-detail-percent'>
+      <h1><%= column %>s <%= property %></h1>
+      <span class='scale'><%= scale %></span>
+      <h2>
+        For the period of <%= details.startOfPeriod %>
+        to <%= details.endOfPeriod %>:</h2>
+      <ul>
+        <li>Average: <%= details.avg %>%</li>
+        <li>Maximum: <%= details.max %>%</li>
+        <li>Best Day: <%= details.bestDay %></li>
+      </ul>
+
+    </script> -->
+    
+    <script type='text/html' id='template-tooltip-count'>
+      
+    </script>
+    
+    <script type='text/html' id='template-tooltip-percent'>
+
+    </script>
+    
     <script>
       var rawData = [
         {
@@ -121,6 +499,8 @@
           showCombined: true,
           showPercent: true
         };
+        
+        this.details = document.getElementById('details');
       }
       
       Dashboard.prototype.columns = function () {
@@ -130,29 +510,61 @@
         return this._columns;
       };
       
+      Dashboard.percentOptions = {
+        scaleOverride: true,
+        scaleSteps: 5,
+        scaleStepWidth: 20,
+        scaleStartValue: 0,
+        scaleLabel: "<%= value %>%"
+      }
+      
+      Dashboard.defaultOptions = {
+        scaleOverride: false,
+        scaleFontFamily: "'Helvetica', 'Arial', sans-serif",
+        scaleFontSize: 12,
+        scaleFontStyle: "100",
+        scaleFontColor: "rgba(44, 62, 80,1.0)",
+      }
+      
+      Dashboard.detailTemplate =  
+            _.template(document.getElementById('template-detail').innerHTML);
+      
       Dashboard.prototype.chartOptions = function () {
-        
+        var options = _.assign({}, Dashboard.defaultOptions);
+        if (this.currentView.showPercent) {
+          return _.merge(options, Dashboard.percentOptions);
+        } else {
+          return options;
+        }
       };
       
       Dashboard.prototype.flowers = function () {
-        return _.without(this.columns(), 'total');
+        return _.without(this.columns(), 'combined unit');
       };
       
       Dashboard.prototype.colorDefaults = function () {
         if (!this._colorDefaults) {
           this._colorDefaults = {}
-          var hue = ~~(Math.random() * 360);
+          var colors = [
+            [155, 89, 182], // sunflower
+            [241, 196, 15], // sunflower
+            [231, 76, 60], // alizarin
+            [26, 188, 156], // turquoise
+            // [46, 204, 113], // emerald
+            // [243, 156, 18], // orange
+            // [52, 152, 219] // peter river
+          ]
+          // var hue = ~~(Math.random() * 360);
           _.each(this.columns(), function (columnName) {
-            var baseColor = new KolorWheel([hue, 30, 50]);
-            var rgb = baseColor.getRgb().toString();
+            // var baseColor = new KolorWheel([hue, 60, 50]);
+            var rgb = colors.shift().toString();
             
             this._colorDefaults[columnName] = {
-              fillColor: "rgba(" + rgb + ",0.6)",
-              strokeColor: "rgba(" + rgb + ",0.8)",
-              highlightFill: "rgba(" + rgb + ",0.75)",
-              highlightStroke: "rgba(" + rgb + ",1)",
+              fillColor: "rgba(" + rgb + ",0.75)",
+              highlightFill: "rgba(" + rgb + ",1)",
+              highlightStroke: "rgba(255,255,255,1)",
             }
-            hue += 67;
+            // hue += 67;
           }.bind(this));
         }
  
@@ -171,12 +583,12 @@
             if (blob.date === date) {
               var flowerInfo = dateInfo[blob.flower] = {};
               var quantSold = parseInt(blob['quantity-sold']);
-              var quantUnsold = parseInt(blob['quantity-unsold']);
-              var startingInventory = quantSold + quantUnsold;
+              var quantRemaining = parseInt(blob['quantity-unsold']);
+              var startingInventory = quantSold + quantRemaining;
               
-              flowerInfo.sold = quantSold;
-              flowerInfo.unsold = quantUnsold;
-              flowerInfo.startingInventory = startingInventory;
+              flowerInfo['sold'] = quantSold;
+              flowerInfo['remaining'] = quantRemaining;
+              flowerInfo['received'] = startingInventory;
             }
           });
         });
@@ -188,9 +600,9 @@
       
       Dashboard.prototype.addTotals = function (dataByDate) {
         _.forIn(dataByDate, function (dateBlob) {
-          var total = dateBlob.total = {};
+          var total = dateBlob['combined unit'] = {};
           _.forIn(dateBlob, function (flowerBlob, flowerName) {
-            if (flowerName === 'total') return;
+            if (flowerName === 'combined unit') return;
             _.forIn(flowerBlob, function (value, attrName) {
               if (!total[attrName]) total[attrName] = 0;
               total[attrName] += value;
@@ -209,22 +621,14 @@
         });
       };
       
-      Dashboard.prototype.buildDataForChart = function () {
-        var datasetArr;
-        if (this.currentView.showCombined) {
-          datasetArr = this.combinedData();
-        } else {
-          datasetArr = this.flowerData();
-        }
-        
+      Dashboard.prototype.chartData = function () {  
         return {
           labels: this.dateStrings(),
-          datasets: datasetArr
+          datasets: this.datasetArr()
         };
       };
       
-      Dashboard.prototype.showChart = function () {
-        
+      Dashboard.prototype.renderChart = function () {
         // empty contents of this.el if it has contents
         while (this.el.firstChild) {
           this.el.removeChild(this.el.firstChild);
@@ -232,18 +636,69 @@
         
         // create a new canvas element to avoid stacking charts on top of one another.
         var canvas = document.createElement('canvas');
-        canvas.height = 300;
-        canvas.width = 600;
+        canvas.height = this.el.offsetHeight;
+        canvas.width = this.el.offsetWidth;
         this.el.appendChild(canvas);
         
         var ctx = canvas.getContext('2d');
-        new Chart(ctx).Bar(this.buildDataForChart(), this.chartOptions());
+        var chart = new Chart(ctx).Bar(this.chartData(), this.chartOptions());
         return this;
       };
       
+      Dashboard.prototype.renderDetails = function () {
+        this.details.innerHTML = '';
+        
+        var data = this.chartData();
+        var labels = data.labels;
+        var datasets = data.datasets;
+        
+        var details = {
+          startOfPeriod: labels[0],
+          endOfPeriod: labels[labels.length - 1]
+        }
+        
+        _.each(datasets, function (dataset, idx) {
+          var total = dataset.data.reduce(function (sum, n) { return sum += n; });
+          var avg = total / dataset.data.length;
+          
+          var max = Math.max.apply(null, dataset.data);
+          var bestDay = labels[dataset.data.indexOf(max)];
+          
+          var li = document.createElement('li');
+          li.classList.add('detail');
+          li.setAttribute('style', 'background-color: ' + 
+              dataset.fillColor + ';')
+          li.setAttribute('monogram', dataset.column[0].toUpperCase());
+          
+          if (this.currentView.showPercent) {
+            li.classList.add('percent');
+          }
+          
+          li.innerHTML = Dashboard.detailTemplate({
+            column: dataset.column,
+            property: this.currentView.property,
+            details: _.merge({
+              total: total,
+              avg: avg,
+              max: max,
+              bestDay: bestDay
+            }, details)
+          });
+          
+          this.details.appendChild(li);
+        }.bind(this));
+      };
+      
       Dashboard.prototype.buildDatasetForColumn = function (column) {
+        var scale = ( this.currentView.showPercent ? 'percent of starting inventory' : 'real units' );
+        var property = this.currentView.property;
+        
+        // pluralize flower name
+        // if (column !== 'combined unit') column += 's';
+        
         var dataset = _.assign({ 
-          label: column + ' ' + this.currentView.property,
+          column: column,
+          label: column + 's ' + property + ' (' + scale + ')',
           data: []
         }, this.colorDefaults()[column]);
         
@@ -252,7 +707,7 @@
           var value = dateBlob[column][this.currentView.property];
           
           if (this.currentView.showPercent) {
-            value = value / dateBlob[column]['startingInventory'] * 100;
+            value = value / dateBlob[column]['received'] * 100;
           }
           dataset.data.push(value);
         }.bind(this));
@@ -260,39 +715,65 @@
         return dataset;
       };
       
-      Dashboard.prototype.flowerData = function () {
-        return _.map(this.flowers(), function (flower) {
-          return this.buildDatasetForColumn(flower);
-        }.bind(this));
-      };
-      
-      Dashboard.prototype.combinedData = function () {
-        return [this.buildDatasetForColumn('total')];
-      };
-      
+      Dashboard.prototype.datasetArr = function () {
+        if (this.currentView.showCombined) {
+          return [this.buildDatasetForColumn('combined unit')];
+        } else {
+          return _.map(this.flowers(), function (flower) {
+            return this.buildDatasetForColumn(flower);
+          }.bind(this));
+        }
+      }
+    
       Dashboard.prototype.updateView = function (viewOptions) {
         _.assign(this.currentView, viewOptions);
-        this.showChart();
+        this.render();
       };
       
+      Dashboard.prototype.render = function () {
+        this.renderChart();
+        this.renderDetails();
+      }
       
-      var dashboard = new Dashboard(inventory, rawData).showChart();
+      var dashboard = new Dashboard(inventory, rawData);
+      dashboard.render();
       
-      showByFlower.onclick = function () {
+      showFlowers.onclick = function () {
         dashboard.updateView({ showCombined: false });
+        updateButtons(this);
         return false;
       };
       
       showCombined.onclick = function () {
         dashboard.updateView({ showCombined: true });
+        updateButtons(this);
         return false;
       };
       
+      showReceivedCount.onclick = function () {
+        dashboard.updateView({
+          property: 'received',
+          showPercent: false
+        });
+        updateButtons(this);
+        return false;
+      };
+      
+      showReceivedPercent.onclick = function () {
+        dashboard.updateView({
+          property: 'received',
+          showPercent: true
+        });
+        updateButtons(this);
+        return false;
+      };
+
       showSoldCount.onclick = function () {
         dashboard.updateView({ 
           property: 'sold',
           showPercent: false
         });
+        updateButtons(this);
         return false;
       };
       
@@ -301,18 +782,39 @@
           property: 'sold',
           showPercent: true
         });
+        updateButtons(this);
         return false;
       };
       
-      // showUnsold.onclick = function () {
-      //   dashboard.updateView({ 'property': 'unsold' });
-      //   return false;
-      // };
-      //
-      showDelivered.onclick = function () {
-        dashboard.updateView({ 'property': 'delivered' });
+      showRemainingCount.onclick = function () {
+        dashboard.updateView({ 
+          property: 'remaining',
+          showPercent: false 
+        });
+        updateButtons(this);
         return false;
       };
+
+      showRemainingPercent.onclick = function () {
+        dashboard.updateView({ 
+          property: 'remaining',
+          showPercent: true
+        });
+        updateButtons(this);
+        return false;
+      };
+      
+      function updateButtons(button) {
+        // using jquery b/c #parents method is awesome
+        var $set = $(button).parents('.button-set');
+        var $otherButtons = $set.find('button');
+        $otherButtons.removeClass('selected');
+        
+        button.classList.add('selected');
+      }
+      
+      showSoldCount.click();
+      showCombined.click();
       
     </script>
     
