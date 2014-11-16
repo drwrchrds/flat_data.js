@@ -23,3 +23,7 @@ bar graph of timeline
 select thing-to-graph
 show totals or by-flower
 click on date shows detail for that day
+
+What is helpful info?
+% of stock sold
+most-popular flowers

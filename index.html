@@ -6,9 +6,14 @@
   <body>
     <main id='inventory'></main>
     <button id='showByFlower'>view info by flower</button>
-    <button id='showTotal'>view totals</button>
+    <button id='showCombined'>all inventory</button>
+    <button id='showDelivered'>starting inventory</button>
+    <button id='showSoldCount'>flowers sold (actual)</button>
+    <button id='showSoldPercent'>flowers sold (%)</button>
+    <!-- <button id='showUnsold'>flowers remaining</button> -->
     
     <script src="js/vendor/Chart.min.js"></script>
+    <script src="js/vendor/KolorWheel.min.js"></script>
     <script src="js/vendor/lodash.min.js"></script>
     <script>
       var rawData = [
@@ -104,34 +109,58 @@
         }
       ]
     </script>
-      
+
     <script>
       
       function Dashboard(el, data) {
+        this.dataByDate = this.breakOutDataByDate(data);
+        
         this.el = el;
         this.currentView = {
           property: 'sold',
-          showTotal: true
+          showCombined: true,
+          showPercent: true
         };
-        this.chartOptions = {}
-        
-        this.dataByDate = this.breakOutDataByDate(data);
-        this.datasetDefaults = this.generateDefaults;
       }
       
-      Dashboard.prototype.generateDefaults = function () {
-        return {}
+      Dashboard.prototype.columns = function () {
+        if(!this._columns) {
+          this._columns = _.keys(this.dataByDate[_.keys(this.dataByDate)[0]]);
+        }
+        return this._columns;
+      };
+      
+      Dashboard.prototype.chartOptions = function () {
+        
+      };
+      
+      Dashboard.prototype.flowers = function () {
+        return _.without(this.columns(), 'total');
+      };
+      
+      Dashboard.prototype.colorDefaults = function () {
+        if (!this._colorDefaults) {
+          this._colorDefaults = {}
+          var hue = ~~(Math.random() * 360);
+          _.each(this.columns(), function (columnName) {
+            var baseColor = new KolorWheel([hue, 30, 50]);
+            var rgb = baseColor.getRgb().toString();
+            
+            this._colorDefaults[columnName] = {
+              fillColor: "rgba(" + rgb + ",0.6)",
+              strokeColor: "rgba(" + rgb + ",0.8)",
+              highlightFill: "rgba(" + rgb + ",0.75)",
+              highlightStroke: "rgba(" + rgb + ",1)",
+            }
+            hue += 67;
+          }.bind(this));
+        }
+ 
+        return this._colorDefaults;
       };
       
       Dashboard.prototype.breakOutDataByDate = function (rawData) {
-        var dates = [];
-      
-        rawData.forEach(function (blob) {
-          var date = blob.date;
-          if (dates.indexOf(date) === -1) {
-            dates.push(date);
-          }
-        });
+        var dates = _.map(rawData, 'date');
       
         // build object with dates as keys
         var dataByDate = {};
@@ -143,24 +172,58 @@
               var flowerInfo = dateInfo[blob.flower] = {};
               var quantSold = parseInt(blob['quantity-sold']);
               var quantUnsold = parseInt(blob['quantity-unsold']);
-              flowerInfo['sold'] = quantSold;
-              flowerInfo['unsold'] = quantUnsold;
-              flowerInfo['delivered'] = quantSold + quantUnsold;
+              var startingInventory = quantSold + quantUnsold;
+              
+              flowerInfo.sold = quantSold;
+              flowerInfo.unsold = quantUnsold;
+              flowerInfo.startingInventory = startingInventory;
             }
           });
         });
-      
+        
+        this.addTotals(dataByDate);
+        
         return dataByDate;
-      }
+      };
+      
+      Dashboard.prototype.addTotals = function (dataByDate) {
+        _.forIn(dataByDate, function (dateBlob) {
+          var total = dateBlob.total = {};
+          _.forIn(dateBlob, function (flowerBlob, flowerName) {
+            if (flowerName === 'total') return;
+            _.forIn(flowerBlob, function (value, attrName) {
+              if (!total[attrName]) total[attrName] = 0;
+              total[attrName] += value;
+            });
+          });
+        });
+      };
+      
+      Dashboard.prototype.labels = function () {
+        return _.keys(this.dataByDate);
+      };
+      
+      Dashboard.prototype.dateStrings = function () {
+        return _.map(this.labels(), function (label) { 
+          return new Date(label).toDateString();
+        });
+      };
+      
+      Dashboard.prototype.buildDataForChart = function () {
+        var datasetArr;
+        if (this.currentView.showCombined) {
+          datasetArr = this.combinedData();
+        } else {
+          datasetArr = this.flowerData();
+        }
+        
+        return {
+          labels: this.dateStrings(),
+          datasets: datasetArr
+        };
+      };
       
       Dashboard.prototype.showChart = function () {
-        var data;
-        
-        if (this.currentView.showTotal) {
-          data = this.dailyTotalsForProperty();
-        } else {
-          data = this.dailyByFlowerForProperty();          
-        }
         
         // empty contents of this.el if it has contents
         while (this.el.firstChild) {
@@ -174,96 +237,82 @@
         this.el.appendChild(canvas);
         
         var ctx = canvas.getContext('2d');
-        this.flowerChart = new Chart(ctx).Bar(data, this.chartOptions);
-        
+        new Chart(ctx).Bar(this.buildDataForChart(), this.chartOptions());
         return this;
       };
       
-      Dashboard.prototype.dailyTotalsForProperty = function () {
-        var labels = Object.keys(this.dataByDate);
-        var dataset = _.assign({
-          label: "total flowers " + this.currentView.property,
+      Dashboard.prototype.buildDatasetForColumn = function (column) {
+        var dataset = _.assign({ 
+          label: column + ' ' + this.currentView.property,
           data: []
-        }, this.datasetDefaults['total']);
+        }, this.colorDefaults()[column]);
         
-        var dashboard = this;
-        labels.forEach(function (label) {
-          var totalSold = 0;
-          var date = dashboard.dataByDate[label];
-          for (var flower in date) {
-            totalSold += date[flower][dashboard.currentView.property];
-          };
+        this.labels().forEach(function (label) {
+          var dateBlob = this.dataByDate[label];
+          var value = dateBlob[column][this.currentView.property];
+          
+          if (this.currentView.showPercent) {
+            value = value / dateBlob[column]['startingInventory'] * 100;
+          }
+          dataset.data.push(value);
+        }.bind(this));
         
-          dataset.data.push(totalSold);
-        });
-      
-        return {
-          labels: labels,
-          datasets: [dataset]
-        };
+        return dataset;
       };
       
-      Dashboard.prototype.dailyByFlowerForProperty = function () {
-        var labels = Object.keys(this.dataByDate);
-        var datasetObj = {};
-        
-        var datasetDefaults = {
-          fillColor: "rgba(151,187,205,0.5)",
-          strokeColor: "rgba(151,187,205,0.8)",
-          highlightFill: "rgba(151,187,205,0.75)",
-          highlightStroke: "rgba(151,187,205,1)",
-        };
-        
-        // get flower names
-        var flowers = [];
-        for (var dateBlob in this.dataByDate) {
-          var dateBlob = this.dataByDate[dateBlob];
-          _.forIn(dateBlob, function (data, flower) {
-            if (!_.contains(flowers, flower)) {
-              flowers.push(flower);
-            }      
-          })
-        }
-        
-        var dashboard = this;
-        _.each(flowers, function (flower) {
-          var dataset = datasetObj[flower] = _.assign({ 
-            label: flower,
-            data: []
-          }, dashboard.datasetDefaults[flower]);
-          
-          labels.forEach(function (label) {
-            var dateBlob = dashboard.dataByDate[label];
-            dataset.data.push(dateBlob[flower][dashboard.currentView.property]);
-          });
-        });
-        
-        
-        var datasetArr = [];
-        for (var key in datasetObj) {
-          datasetArr.push(datasetObj[key]);
-        }
+      Dashboard.prototype.flowerData = function () {
+        return _.map(this.flowers(), function (flower) {
+          return this.buildDatasetForColumn(flower);
+        }.bind(this));
+      };
       
-        return {
-          labels: labels,
-          datasets: datasetArr
-        };
-      }
+      Dashboard.prototype.combinedData = function () {
+        return [this.buildDatasetForColumn('total')];
+      };
+      
+      Dashboard.prototype.updateView = function (viewOptions) {
+        _.assign(this.currentView, viewOptions);
+        this.showChart();
+      };
       
       
       var dashboard = new Dashboard(inventory, rawData).showChart();
       
-      showByFlower.onclick = (function () {
-        dashboard.currentView.showTotal = false;
-        dashboard.showChart();
+      showByFlower.onclick = function () {
+        dashboard.updateView({ showCombined: false });
         return false;
-      });
+      };
       
-      showTotal.onclick = (function () {
-        dashboard.currentView.showTotal = true;
-        dashboard.showChart();
+      showCombined.onclick = function () {
+        dashboard.updateView({ showCombined: true });
         return false;
-      });
+      };
+      
+      showSoldCount.onclick = function () {
+        dashboard.updateView({ 
+          property: 'sold',
+          showPercent: false
+        });
+        return false;
+      };
+      
+      showSoldPercent.onclick = function () {
+        dashboard.updateView({ 
+          property: 'sold',
+          showPercent: true
+        });
+        return false;
+      };
+      
+      // showUnsold.onclick = function () {
+      //   dashboard.updateView({ 'property': 'unsold' });
+      //   return false;
+      // };
+      //
+      showDelivered.onclick = function () {
+        dashboard.updateView({ 'property': 'delivered' });
+        return false;
+      };
       
     </script>
     
