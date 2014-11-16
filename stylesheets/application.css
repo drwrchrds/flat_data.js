@@ -179,6 +179,7 @@ html, body {
   vertical-align: middle;
   outline: none;
   background-color: rgba(0,0,0,.1);
+  border: none;
 }
 
 .button-set button.selected {

@@ -326,9 +326,7 @@ DashboardUI.prototype.bindClickEvents = function () {
   
     button.classList.add('selected');
   }
-  
-  
-  // 
+
   var dashboard = this.dashboard;
   showFlowers.onclick = function () {
     dashboard.updateView({ showCombined: false });
