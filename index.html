@@ -4,12 +4,7 @@
     <title>Flower Power</title>
   </head>
   <body>
-    <canvas 
-      id='inventory' 
-      width='700' 
-      height='300' 
-      style='border: thin solid black;'>
-    </canvas>
+    <main id='inventory'></main>
     <button id='showByFlower'>view info by flower</button>
     <button id='showTotal'>view totals</button>
     
@@ -108,56 +103,42 @@
           "quantity-unsold": "8"
         }
       ]
-      
-      // var options = {
-      //   //Boolean - Whether the scale should start at zero, or an order of magnitude down from the lowest value
-      //   scaleBeginAtZero : true,
-      //
-      //   //Boolean - Whether grid lines are shown across the chart
-      //   scaleShowGridLines : true,
-      //
-      //   //String - Colour of the grid lines
-      //   scaleGridLineColor : "rgba(0,0,0,.05)",
-      //
-      //   //Number - Width of the grid lines
-      //   scaleGridLineWidth : 1,
-      //
-      //   //Boolean - If there is a stroke on each bar
-      //   barShowStroke : true,
-      //
-      //   //Number - Pixel width of the bar stroke
-      //   barStrokeWidth : 2,
-      //
-      //   //Number - Spacing between each of the X value sets
-      //   barValueSpacing : 5,
-      //
-      //   //Number - Spacing between data sets within X values
-      //   barDatasetSpacing : 1,
-      //
-      //   //String - A legend template
-      //   legendTemplate : "<ul class=\"<%=name.toLowerCase()%>-legend\"><% for (var i=0; i<datasets.length; i++){%><li><span style=\"background-color:<%=datasets[i].lineColor%>\"></span><%if(datasets[i].label){%><%=datasets[i].label%><%}%></li><%}%></ul>"
-      //
-      // }
     </script>
-
+      
     <script>
-
-      function breakOutByDate(data) {
-        var dates = [];
+      
+      function Dashboard(el, data) {
+        this.el = el;
+        this.currentView = {
+          property: 'sold',
+          showTotal: true
+        };
+        this.chartOptions = {}
         
-        data.forEach(function (blob) {
+        this.dataByDate = this.breakOutDataByDate(data);
+        this.datasetDefaults = this.generateDefaults;
+      }
+      
+      Dashboard.prototype.generateDefaults = function () {
+        return {}
+      };
+      
+      Dashboard.prototype.breakOutDataByDate = function (rawData) {
+        var dates = [];
+      
+        rawData.forEach(function (blob) {
           var date = blob.date;
           if (dates.indexOf(date) === -1) {
             dates.push(date);
           }
         });
-        
+      
         // build object with dates as keys
         var dataByDate = {};
         dates.forEach(function (date) {
           var dateInfo = dataByDate[date] = {};
-          
-          data.forEach(function (blob) {
+        
+          rawData.forEach(function (blob) {
             if (blob.date === date) {
               var flowerInfo = dateInfo[blob.flower] = {};
               var quantSold = parseInt(blob['quantity-sold']);
@@ -168,52 +149,62 @@
             }
           });
         });
-        
+      
         return dataByDate;
       }
       
-      
-      
-      var dataByDate = breakOutByDate(rawData);
-      
-      // different views:
-      // delivered (total)
-      // sold
-      // unsold
-      
-      // view by: 
-      // all flowers
-      // single flowers
-      
-      function dailyTotalsForProperty(property) {
-        var labels = Object.keys(dataByDate);
-        var dataset = {
-          label: "Total Flowers " + property,
-          fillColor: "rgba(151,187,205,0.5)",
-          strokeColor: "rgba(151,187,205,0.8)",
-          highlightFill: "rgba(151,187,205,0.75)",
-          highlightStroke: "rgba(151,187,205,1)",
-          data: []
-        };
+      Dashboard.prototype.showChart = function () {
+        var data;
         
+        if (this.currentView.showTotal) {
+          data = this.dailyTotalsForProperty();
+        } else {
+          data = this.dailyByFlowerForProperty();          
+        }
+        
+        // empty contents of this.el if it has contents
+        while (this.el.firstChild) {
+          this.el.removeChild(this.el.firstChild);
+        }
+        
+        // create a new canvas element to avoid stacking charts on top of one another.
+        var canvas = document.createElement('canvas');
+        canvas.height = 300;
+        canvas.width = 600;
+        this.el.appendChild(canvas);
+        
+        var ctx = canvas.getContext('2d');
+        this.flowerChart = new Chart(ctx).Bar(data, this.chartOptions);
+        
+        return this;
+      };
+      
+      Dashboard.prototype.dailyTotalsForProperty = function () {
+        var labels = Object.keys(this.dataByDate);
+        var dataset = _.assign({
+          label: "total flowers " + this.currentView.property,
+          data: []
+        }, this.datasetDefaults['total']);
+        
+        var dashboard = this;
         labels.forEach(function (label) {
           var totalSold = 0;
-          var date = dataByDate[label];
+          var date = dashboard.dataByDate[label];
           for (var flower in date) {
-            totalSold += date[flower][property];
+            totalSold += date[flower][dashboard.currentView.property];
           };
         
           dataset.data.push(totalSold);
-        })
+        });
       
         return {
           labels: labels,
           datasets: [dataset]
         };
-      }
+      };
       
-      function dailyByFlowerForProperty(property) {
-        var labels = Object.keys(dataByDate);
+      Dashboard.prototype.dailyByFlowerForProperty = function () {
+        var labels = Object.keys(this.dataByDate);
         var datasetObj = {};
         
         var datasetDefaults = {
@@ -225,8 +216,8 @@
         
         // get flower names
         var flowers = [];
-        for (var dateBlob in dataByDate) {
-          var dateBlob = dataByDate[dateBlob];
+        for (var dateBlob in this.dataByDate) {
+          var dateBlob = this.dataByDate[dateBlob];
           _.forIn(dateBlob, function (data, flower) {
             if (!_.contains(flowers, flower)) {
               flowers.push(flower);
@@ -234,15 +225,16 @@
           })
         }
         
+        var dashboard = this;
         _.each(flowers, function (flower) {
           var dataset = datasetObj[flower] = _.assign({ 
             label: flower,
             data: []
-          }, datasetDefaults);
+          }, dashboard.datasetDefaults[flower]);
           
           labels.forEach(function (label) {
-            var dateBlob = dataByDate[label];
-            dataset.data.push(dateBlob[flower][property]);
+            var dateBlob = dashboard.dataByDate[label];
+            dataset.data.push(dateBlob[flower][dashboard.currentView.property]);
           });
         });
         
@@ -257,48 +249,9 @@
           datasets: datasetArr
         };
       }
-
-      // var totalSoldData = quantityTotal('sold');
-      // var totalSoldDataByFlower = quantityByFlower('sold');
-      //
-      // var totalUnsoldData = quantityTotal('unsold');
-      // var totalUnsoldDataByFlower = quantityByFlower('unsold');
-
-    </script>
       
-    <script>
       
-      function Dashboard(rootEl) {
-
-        this.currentView = {
-          property: 'sold',
-          showTotal: true
-        };
-        this.chartOptions = {}
-        this.rendered = false;
-        
-        this.flowerChart = new Chart(ctx);
-      }
-      
-      Dashboard.prototype.showChart = function () {
-        var data;
-        
-        if (this.currentView.showTotal) {
-          data = dailyTotalsForProperty(this.currentView.property);
-        } else {
-          data = dailyByFlowerForProperty(this.currentView.property);          
-        }
-        
-        if (this.rendered) {
-          this.flowerChart.Bar(data, this.chartOptions);     
-          this.rendered = true;     
-        } else {
-          this.flowerChart;
-        }
-        return this;
-      };
-      
-      var dashboard = new Dashboard().showChart();
+      var dashboard = new Dashboard(inventory, rawData).showChart();
       
       showByFlower.onclick = (function () {
         dashboard.currentView.showTotal = false;
