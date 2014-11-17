@@ -28,6 +28,7 @@ html, body {
 #details, #chart {
   padding: 10px;
 }
+
 .detail {
   padding: 15px;
   margin-bottom: 10px;
@@ -58,6 +59,7 @@ html, body {
   color: rgba(44, 62, 80,1.0);
   content: 'as real units';
 }
+  
 .detail.percent h1::after {
   content: 'as percent of start-of-day ' attr(unit) ' inventory';
 }
@@ -67,8 +69,15 @@ html, body {
   width: 35%;
   text-align: right;
 }
-.detail .period {
-  font-size: 2em;
+
+.detail .date-title {
+  font-weight: 100;
+}
+
+.detail h3.date {
+  font-weight: 100;
+  margin-top:10px;
+  color: rgba(44, 62, 80, 1.0);
 }
 
 .detail.percent .focus-num::after {

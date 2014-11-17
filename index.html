@@ -87,21 +87,11 @@
     
     <script type='text/html' id='template-detail'>
       <h1 unit='<%= column %>'><%= column %>s <%= property %></h1>
-      <div class='periods'>
-        <div>    
-          <span class='description'>
-            For the period starting 
-          </span>
-          <span class='period'><%= details.startOfPeriod %></span>
-        </div>
-        
-        <div>
-          <span class='description'>and ending</span>
-          <span class='period'><%= details.endOfPeriod %></span>
-        </div>
-      </div>
+      <span class='date-title'>for period:</span>
+      <h3 class='date'>
+        <%= details.startOfPeriod %> through <%= details.endOfPeriod %>
+      </h3>
       
-      <br>
       <ul class='detail-list'>
         <li>
           <span>Total:</span>

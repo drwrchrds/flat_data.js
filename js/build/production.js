@@ -95,7 +95,9 @@ Dashboard.percentOptions = {
   scaleSteps: 5,
   scaleStepWidth: 20,
   scaleStartValue: 0,
-  scaleLabel: "<%= value %>%"
+  scaleLabel: "<%= value %>%",
+  tooltipTemplate: '<%if (datasetLabel){%><%=datasetLabel%>: <%}%><%= value.toFixed(2) %>%',
+  multiTooltipTemplate: '<%if (datasetLabel){%><%=datasetLabel%>: <%}%><%= value.toFixed(2) %>%'
 };
 
 Dashboard.defaultOptions = {
@@ -103,14 +105,20 @@ Dashboard.defaultOptions = {
   scaleFontFamily: "'Helvetica', 'Arial', sans-serif",
   scaleFontSize: 12,
   scaleFontStyle: "100",
-  scaleFontColor: "rgba(44, 62, 80,1.0)"
+  scaleFontColor: "rgba(44, 62, 80,1.0)",
+  tooltipCornerRadius: 0,
+  tooltipTemplate: '<%if (datasetLabel){%><%=datasetLabel%>: <%}%><%= value %>',
+  multiTooltipTemplate: '<%if (datasetLabel){%><%=datasetLabel%>: <%}%><%= value %>'
 };
 
 Dashboard.detailTemplate =  
       _.template(document.getElementById('template-detail').innerHTML);
 
 Dashboard.prototype.chartOptions = function () {
-  var options = _.assign({}, Dashboard.defaultOptions);
+  var options = _.assign({
+    onAnimationComplete: this.renderDetails.bind(this) 
+  }, Dashboard.defaultOptions);
+
   if (this.currentView.showPercent) {
     return _.merge(options, Dashboard.percentOptions);
   } else {
@@ -135,6 +143,7 @@ Dashboard.prototype.colorDefaults = function () {
       var rgb = colors.shift().toString();
       
       this._colorDefaults[columnName] = {
+        strokeColor: "rgba(" + rgb + ",0.75)",
         fillColor: "rgba(" + rgb + ",0.75)",
         highlightFill: "rgba(" + rgb + ",1)",
         highlightStroke: "rgba(255,255,255,1)"
@@ -259,7 +268,10 @@ Dashboard.prototype.renderDetails = function () {
       }, details)
     });
     
+    $(li).hide();
     this.details.appendChild(li);
+    $(li).fadeIn();
+
   }.bind(this));
 };
 
@@ -271,7 +283,7 @@ Dashboard.prototype.buildDatasetForColumn = function (column) {
   // if (column !== 'combined unit') column += 's';
   var dataset = _.assign({ 
     column: column,
-    label: column + 's ' + property + ' (' + scale + ')',
+    label: column + 's ' + property,
     data: []
   }, this.colorDefaults()[column]);
   
@@ -300,13 +312,10 @@ Dashboard.prototype.datasetArr = function () {
 
 Dashboard.prototype.updateView = function (viewOptions) {
   _.assign(this.currentView, viewOptions);
-  this.render();
+  this.renderChart();
+  this.details.innerHTML = '';
 };
 
-Dashboard.prototype.render = function () {
-  this.renderChart();
-  this.renderDetails();
-};
 function DashboardUI() {
   this.dashboard = new Dashboard(inventory, details, rawData);
   this.bindClickEvents();
