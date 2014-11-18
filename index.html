@@ -6,9 +6,9 @@
     <link rel='stylesheet' href='stylesheets/application.css'>
   </head>
   <body>
-    <!-- <div class='container'> -->
     <div id='chart'>
       <main id='inventory'></main>
+      
       <div class='chart-buttons'>
         <div class='button-set'>
           show data for:
@@ -33,7 +33,6 @@
         </div>
       
         <div class='button-set'>
-          <!-- <button id='showStartingInventory'>sold + unsold</button> -->
           <div class='select-data'>
             <span>unit sales</span>
             <span class='flavor'></span>
@@ -83,37 +82,37 @@
     
     <ul id='details'></ul>
     
-
-    
     <script type='text/html' id='template-detail'>
-      <h1 unit='<%= column %>'><%= column %>s <%= property %></h1>
-      <span class='date-title'>for period:</span>
-      <h3 class='date'>
-        <%= details.startOfPeriod %> through <%= details.endOfPeriod %>
-      </h3>
-      
-      <ul class='detail-list'>
-        <li>
-          <span>Total:</span>
-          <span class='focus focus-num total'><%= details.total %></span>
-        </li>
-        <li>
-          <span>Average:</span>
-          <span class='focus focus-num avg'><%= details.avg.toFixed() %></span>
-        </li>
-        <li>
-          <span>Maximum:</span>
-          <span class='focus focus-num max'><%= details.max.toFixed() %></span>
-        </li>
-        <li>
-          <span>Best Day:</span>
-          <span class='focus focus-date'><%= details.bestDay %></span>
-        </li>
-      </ul>
+      <li 
+        class='detail <%= percent %>'
+        style='background-color: <%= dataset.fillColor %>;' 
+        monogram='<%= dataset.label[0].toUpperCase() %>'>
+        <h1 unit='<%= dataset.label %>'><%= dataset.label %></h1>
+        <span class='date-title'>for period:</span>
+        <h3 class='date'>
+          <%= details.startOfPeriod %> through <%= details.endOfPeriod %>
+        </h3>
+        
+        <ul class='detail-list'>
+          <li>
+            <span>Total:</span>
+            <span class='focus focus-num total'><%= details.total %></span>
+          </li>
+          <li>
+            <span>Average:</span>
+            <span class='focus focus-num avg'><%= details.avg.toFixed() %></span>
+          </li>
+          <li>
+            <span>Maximum:</span>
+            <span class='focus focus-num max'><%= details.max.toFixed() %></span>
+          </li>
+          <li>
+            <span>Best Day:</span>
+            <span class='focus focus-date'><%= details.bestDay %></span>
+          </li>
+        </ul>
+      </li>
     </script>
-    
-    <script type='text/html' id='template-tooltip-count'></script>
-    <script type='text/html' id='template-tooltip-percent'></script>
     
     <script>
       var rawData = [

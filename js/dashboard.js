@@ -28,6 +28,7 @@ Dashboard.percentOptions = {
 };
 
 Dashboard.defaultOptions = {
+  animationSteps: 20,
   scaleOverride: false,
   scaleFontFamily: "'Helvetica', 'Arial', sans-serif",
   scaleFontSize: 12,
@@ -161,6 +162,7 @@ Dashboard.prototype.renderDetails = function () {
   var data = this.chartData();
   var labels = data.labels;
   var datasets = data.datasets;
+  var percent = (this.currentView.showPercent ? 'percent' : '');
   
   var details = {
     startOfPeriod: labels[0],
@@ -174,19 +176,9 @@ Dashboard.prototype.renderDetails = function () {
     var max = Math.max.apply(null, dataset.data);
     var bestDay = labels[dataset.data.indexOf(max)];
     
-    var li = document.createElement('li');
-    li.classList.add('detail');
-    li.setAttribute('style', 'background-color: ' + 
-          dataset.fillColor + ';');
-    li.setAttribute('monogram', dataset.column[0].toUpperCase());
-    
-    if (this.currentView.showPercent) {
-      li.classList.add('percent');
-    }
-    
-    li.innerHTML = Dashboard.detailTemplate({
-      column: dataset.column,
-      property: this.currentView.property,
+    var li = Dashboard.detailTemplate({
+      dataset: dataset,
+      percent: percent,
       details: _.merge({
         total: total,
         avg: avg,
@@ -195,21 +187,22 @@ Dashboard.prototype.renderDetails = function () {
       }, details)
     });
     
-    $(li).hide();
-    this.details.appendChild(li);
-    $(li).fadeIn();
+    $li = $(li);
+    $li.hide();
+    this.details.appendChild($li[0]);
+    $li.fadeIn();
 
   }.bind(this));
 };
 
 Dashboard.prototype.buildDatasetForColumn = function (column) {
-  var scale = ( this.currentView.showPercent ? 'percent of starting inventory' : 'real units' );
+  var scale = ( this.currentView.showPercent ? 
+        'percent of starting inventory' : 'real units' );
   var property = this.currentView.property;
   
   // pluralize flower name
   // if (column !== 'combined unit') column += 's';
   var dataset = _.assign({ 
-    column: column,
     label: column + 's ' + property,
     data: []
   }, this.colorDefaults()[column]);
